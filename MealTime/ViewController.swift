@@ -11,7 +11,7 @@ class ViewController: UIViewController {
     @IBOutlet var tableView: UITableView!
     
     var context: NSManagedObjectContext!
-    var array = [Date]()
+    var user: User!
     
     lazy var dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -21,14 +21,36 @@ class ViewController: UIViewController {
     }()
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
-        let date = Date()
-        array.append(date)
-        tableView.reloadData()
+        let meal = Meal(context: context)
+        meal.date = Date()
+    
+        user.addToMeals(meal)
+        do{
+            try context.save()
+            tableView.reloadData()
+        } catch let error {
+            print(error)
+        }
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: "Cell")
+        let userName = "Max"
+        let fetchRequest = User.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "name == %@", userName)
+        do {
+            let results = try context.fetch(fetchRequest)
+            if results.isEmpty {
+                user = User(context: context)
+                user.name = userName
+                try context.save()
+            } else {
+                user = results.first
+            }
+        } catch let error {
+            print(error)
+        }
     }
 }
 
@@ -40,16 +62,16 @@ extension ViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return array.count
+        return user.meals?.count ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell")
+        let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath) as UITableViewCell
         
-        let date = array[indexPath.row]
+        guard let meal = user.meals?[indexPath.row] as? Meal, let mealDate = meal.date else {return cell}
         
-        cell!.textLabel!.text = dateFormatter.string(from: date)
-        return cell!
+        cell.textLabel!.text = dateFormatter.string(from: mealDate)
+        return cell
     }
 }
 
