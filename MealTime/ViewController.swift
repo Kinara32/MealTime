@@ -73,5 +73,17 @@ extension ViewController: UITableViewDataSource {
         cell.textLabel!.text = dateFormatter.string(from: mealDate)
         return cell
     }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        guard let meal = user.meals?[indexPath.row] as? Meal, editingStyle == .delete else {return}
+        context.delete(meal)
+        
+        do {
+            try context.save()
+            tableView.deleteRows(at: [indexPath], with: .fade)
+        } catch let error {
+            print(error)
+        }
+    }
 }
 
